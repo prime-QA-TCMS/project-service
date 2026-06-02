@@ -5,8 +5,10 @@ export interface IConfiguration extends Document {
   name: string;
   description?: string;
   baseUrl?: string;
-  environmentVariables?: Record<string, string>;
+  environmentVariables?: Map<string, string>;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const ConfigurationSchema = new Schema<IConfiguration>(
@@ -20,6 +22,9 @@ const ConfigurationSchema = new Schema<IConfiguration>(
   },
   { timestamps: true }
 );
+
+// Index for performance
+ConfigurationSchema.index({ projectId: 1 });
 
 export const ConfigurationModel = mongoose.model<IConfiguration>(
   "Configuration",

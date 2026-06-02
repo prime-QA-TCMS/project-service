@@ -1,0 +1,306 @@
+{
+	"info": {
+		"name": "Project Service API",
+		"description": "A comprehensive collection of API endpoints for the Project Service. This service manages projects, milestones, and configurations with authentication. Each endpoint requires a valid authentication token.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{authToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "projectId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Projects",
+			"description": "Endpoints for managing projects. Projects are the core entities that contain milestones and configurations. Each project has an owner, visibility settings (private/public), and an auto-generated key based on the project name.",
+			"item": [
+				{
+					"name": "Get All Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Retrieves a list of all projects in the system.\n\n**Authentication:** Required (Bearer Token)\n\n**Response:**\n- **200 OK**: Returns an array of project objects\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example:**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"Project Management System\",\n    \"key\": \"PMS\",\n    \"description\": \"A system for managing projects\",\n    \"owner\": \"user123\",\n    \"visibility\": \"private\",\n    \"isActive\": true,\n    \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n    \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n  }\n]\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project"
+								}
+							]
+						},
+						"description": "Retrieves a single project by its unique ID.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `id` (string, required): The MongoDB ObjectId of the project to retrieve\n\n**Response:**\n- **200 OK**: Returns the project object\n- **404 Not Found**: Project with the specified ID does not exist\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Project Management System\",\n  \"key\": \"PMS\",\n  \"description\": \"A system for managing projects\",\n  \"owner\": \"user123\",\n  \"visibility\": \"private\",\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n}\n```\n\n**Response Body Example (Not Found):**\n```json\n{\n  \"message\": \"Project not found\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Project\",\n  \"key\": \"NP\",\n  \"description\": \"This is a new project for testing\",\n  \"owner\": \"user123\",\n  \"visibility\": \"private\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Creates a new project in the system. The project key will be auto-generated from the name if not provided.\n\n**Authentication:** Required (Bearer Token)\n\n**Request Body:**\n- `name` (string, required): The name of the project\n- `key` (string, optional): A unique project key (auto-generated if not provided)\n- `description` (string, optional): A description of the project\n- `owner` (string, required): The userId of the project owner\n- `visibility` (string, optional): Either \"private\" or \"public\" (default: \"private\")\n\n**Request Body Example:**\n```json\n{\n  \"name\": \"New Project\",\n  \"key\": \"NP\",\n  \"description\": \"This is a new project for testing\",\n  \"owner\": \"user123\",\n  \"visibility\": \"private\"\n}\n```\n\n**Response:**\n- **201 Created**: Returns the newly created project object\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error (e.g., duplicate key)\n\n**Response Body Example:**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"New Project\",\n  \"key\": \"NP\",\n  \"description\": \"This is a new project for testing\",\n  \"owner\": \"user123\",\n  \"visibility\": \"private\",\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-20T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-20T10:00:00.000Z\"\n}\n```\n\n**Notes:**\n- If no key is provided, one will be auto-generated from the project name (e.g., \"Project Management System\" → \"PMS\")\n- The key must be unique across all projects\n- The `isActive` field defaults to `true`\n- `createdAt` and `updatedAt` timestamps are automatically added"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Project Name\",\n  \"description\": \"Updated description\",\n  \"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project to update"
+								}
+							]
+						},
+						"description": "Updates an existing project's information. Only the fields provided in the request body will be updated.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `id` (string, required): The MongoDB ObjectId of the project to update\n\n**Request Body:**\nAny combination of the following fields (all optional):\n- `name` (string): The new name of the project\n- `key` (string): A new unique project key\n- `description` (string): A new description\n- `owner` (string): The userId of the new owner\n- `visibility` (string): Either \"private\" or \"public\"\n- `isActive` (boolean): Whether the project is active\n\n**Request Body Example:**\n```json\n{\n  \"name\": \"Updated Project Name\",\n  \"description\": \"Updated description\",\n  \"visibility\": \"public\"\n}\n```\n\n**Response:**\n- **200 OK**: Returns the updated project object\n- **404 Not Found**: Project with the specified ID does not exist\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Updated Project Name\",\n  \"key\": \"PMS\",\n  \"description\": \"Updated description\",\n  \"owner\": \"user123\",\n  \"visibility\": \"public\",\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-20T11:30:00.000Z\"\n}\n```\n\n**Response Body Example (Not Found):**\n```json\n{\n  \"message\": \"Project not found\"\n}\n```\n\n**Notes:**\n- The `updatedAt` timestamp is automatically updated\n- Only specified fields are modified; others remain unchanged"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project to delete"
+								}
+							]
+						},
+						"description": "Soft deletes a project by setting its `isActive` flag to `false`. The project is not permanently removed from the database.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `id` (string, required): The MongoDB ObjectId of the project to delete\n\n**Response:**\n- **200 OK**: Returns a success message with the deactivated project object\n- **404 Not Found**: Project with the specified ID does not exist\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example (Success):**\n```json\n{\n  \"message\": \"Project deactivated\",\n  \"project\": {\n    \"_id\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"Project Management System\",\n    \"key\": \"PMS\",\n    \"description\": \"A system for managing projects\",\n    \"owner\": \"user123\",\n    \"visibility\": \"private\",\n    \"isActive\": false,\n    \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n    \"updatedAt\": \"2026-01-20T12:00:00.000Z\"\n  }\n}\n```\n\n**Response Body Example (Not Found):**\n```json\n{\n  \"message\": \"Project not found\"\n}\n```\n\n**Notes:**\n- This is a soft delete operation - the project is marked as inactive but not removed\n- The `isActive` field is set to `false`\n- The `updatedAt` timestamp is automatically updated\n- The project data remains in the database and can be reactivated by updating `isActive` to `true`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Configurations",
+			"description": "Endpoints for managing project configurations. Configurations store environment-specific settings such as base URLs, environment variables, and other project-related settings. Each configuration is associated with a specific project.",
+			"item": [
+				{
+					"name": "Get Configurations for Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/:projectId/configurations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":projectId",
+								"configurations"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project"
+								}
+							]
+						},
+						"description": "Retrieves all configurations associated with a specific project.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `projectId` (string, required): The MongoDB ObjectId of the project\n\n**Response:**\n- **200 OK**: Returns an array of configuration objects for the project\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example:**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439012\",\n    \"projectId\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"Development Configuration\",\n    \"description\": \"Configuration for development environment\",\n    \"baseUrl\": \"http://localhost:3000\",\n    \"environmentVariables\": {\n      \"NODE_ENV\": \"development\",\n      \"API_KEY\": \"dev-api-key-123\",\n      \"DB_HOST\": \"localhost\"\n    },\n    \"isActive\": true,\n    \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n    \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n  },\n  {\n    \"_id\": \"507f1f77bcf86cd799439013\",\n    \"projectId\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"Production Configuration\",\n    \"description\": \"Configuration for production environment\",\n    \"baseUrl\": \"https://api.production.com\",\n    \"environmentVariables\": {\n      \"NODE_ENV\": \"production\",\n      \"API_KEY\": \"prod-api-key-456\",\n      \"DB_HOST\": \"prod-db.example.com\"\n    },\n    \"isActive\": true,\n    \"createdAt\": \"2026-01-15T11:00:00.000Z\",\n    \"updatedAt\": \"2026-01-15T11:00:00.000Z\"\n  }\n]\n```\n\n**Notes:**\n- Returns all configurations where `projectId` matches the specified project\n- Returns an empty array if no configurations exist for the project"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Configuration",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Development Configuration\",\n  \"description\": \"Configuration for development environment\",\n  \"baseUrl\": \"http://localhost:3000\",\n  \"environmentVariables\": {\n    \"NODE_ENV\": \"development\",\n    \"API_KEY\": \"dev-api-key-123\",\n    \"DB_HOST\": \"localhost\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/:projectId/configurations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":projectId",
+								"configurations"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project"
+								}
+							]
+						},
+						"description": "Creates a new configuration for a specific project. The configuration stores environment-specific settings.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `projectId` (string, required): The MongoDB ObjectId of the project to associate the configuration with\n\n**Request Body:**\n- `name` (string, required): The name of the configuration\n- `description` (string, optional): A description of the configuration\n- `baseUrl` (string, optional): The base URL for the environment\n- `environmentVariables` (object, optional): Key-value pairs of environment variables\n\n**Request Body Example:**\n```json\n{\n  \"name\": \"Development Configuration\",\n  \"description\": \"Configuration for development environment\",\n  \"baseUrl\": \"http://localhost:3000\",\n  \"environmentVariables\": {\n    \"NODE_ENV\": \"development\",\n    \"API_KEY\": \"dev-api-key-123\",\n    \"DB_HOST\": \"localhost\",\n    \"PORT\": \"3000\"\n  }\n}\n```\n\n**Response:**\n- **201 Created**: Returns the newly created configuration object\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example:**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439012\",\n  \"projectId\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Development Configuration\",\n  \"description\": \"Configuration for development environment\",\n  \"baseUrl\": \"http://localhost:3000\",\n  \"environmentVariables\": {\n    \"NODE_ENV\": \"development\",\n    \"API_KEY\": \"dev-api-key-123\",\n    \"DB_HOST\": \"localhost\",\n    \"PORT\": \"3000\"\n  },\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-20T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-20T10:00:00.000Z\"\n}\n```\n\n**Notes:**\n- The `projectId` from the URL path is automatically included in the configuration\n- The `isActive` field defaults to `true`\n- `createdAt` and `updatedAt` timestamps are automatically added\n- Environment variables can store any key-value pairs needed for the environment"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Milestones",
+			"description": "Endpoints for managing project milestones. Milestones represent significant goals or deliverables within a project. Each milestone has dates, completion status, and is associated with a specific project.",
+			"item": [
+				{
+					"name": "Get Milestones for Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/:projectId/milestones",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":projectId",
+								"milestones"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project"
+								}
+							]
+						},
+						"description": "Retrieves all milestones associated with a specific project.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `projectId` (string, required): The MongoDB ObjectId of the project\n\n**Response:**\n- **200 OK**: Returns an array of milestone objects for the project\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example:**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439014\",\n    \"projectId\": \"507f1f77bcf86cd799439011\",\n    \"title\": \"Phase 1 Completion\",\n    \"description\": \"Complete the initial phase of development\",\n    \"startDate\": \"2026-01-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-03-31T23:59:59.000Z\",\n    \"isCompleted\": false,\n    \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n    \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n  },\n  {\n    \"_id\": \"507f1f77bcf86cd799439015\",\n    \"projectId\": \"507f1f77bcf86cd799439011\",\n    \"title\": \"Beta Release\",\n    \"description\": \"Release beta version to test users\",\n    \"startDate\": \"2026-04-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-06-30T23:59:59.000Z\",\n    \"isCompleted\": false,\n    \"createdAt\": \"2026-01-15T10:30:00.000Z\",\n    \"updatedAt\": \"2026-01-15T10:30:00.000Z\"\n  }\n]\n```\n\n**Notes:**\n- Returns all milestones where `projectId` matches the specified project\n- Returns an empty array if no milestones exist for the project\n- Milestones are not filtered by completion status - both completed and incomplete milestones are returned"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Milestone",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Phase 1 Completion\",\n  \"description\": \"Complete the initial phase of development\",\n  \"startDate\": \"2026-01-01T00:00:00.000Z\",\n  \"dueDate\": \"2026-03-31T23:59:59.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/:projectId/milestones",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								":projectId",
+								"milestones"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "{{projectId}}",
+									"description": "The unique MongoDB ObjectId of the project"
+								}
+							]
+						},
+						"description": "Creates a new milestone for a specific project. Milestones help track important goals and deadlines.\n\n**Authentication:** Required (Bearer Token)\n\n**Path Parameters:**\n- `projectId` (string, required): The MongoDB ObjectId of the project to associate the milestone with\n\n**Request Body:**\n- `title` (string, required): The title of the milestone\n- `description` (string, optional): A detailed description of the milestone\n- `startDate` (date, optional): The start date for the milestone (ISO 8601 format)\n- `dueDate` (date, optional): The due date for the milestone (ISO 8601 format)\n- `isCompleted` (boolean, optional): Whether the milestone is completed (default: false)\n\n**Request Body Example:**\n```json\n{\n  \"title\": \"Phase 1 Completion\",\n  \"description\": \"Complete the initial phase of development including core features and basic UI\",\n  \"startDate\": \"2026-01-01T00:00:00.000Z\",\n  \"dueDate\": \"2026-03-31T23:59:59.000Z\"\n}\n```\n\n**Response:**\n- **201 Created**: Returns the newly created milestone object\n- **401 Unauthorized**: Invalid or missing authentication token\n- **500 Internal Server Error**: Database or server error\n\n**Response Body Example:**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439014\",\n  \"projectId\": \"507f1f77bcf86cd799439011\",\n  \"title\": \"Phase 1 Completion\",\n  \"description\": \"Complete the initial phase of development including core features and basic UI\",\n  \"startDate\": \"2026-01-01T00:00:00.000Z\",\n  \"dueDate\": \"2026-03-31T23:59:59.000Z\",\n  \"isCompleted\": false,\n  \"createdAt\": \"2026-01-20T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-20T10:00:00.000Z\"\n}\n```\n\n**Notes:**\n- The `projectId` from the URL path is automatically included in the milestone\n- The `isCompleted` field defaults to `false`\n- `createdAt` and `updatedAt` timestamps are automatically added\n- Dates should be provided in ISO 8601 format\n- Both `startDate` and `dueDate` are optional, allowing flexible milestone planning"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

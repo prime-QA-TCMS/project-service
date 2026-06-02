@@ -1,33 +1,125 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { ConfigurationModel } from "../models/configuration.model.js";
+import logger from "../utils/logger.js";
+import type { AuthRequest } from "../middleware/authorization.js";
 
-export const getConfigurations = async (req: Request, res: Response) => {
+export const getConfigurations = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const configs = await ConfigurationModel.find({ projectId: req.params.projectId });
-    res.json(configs);
+    // Project is already validated by requireProjectReadAccess middleware
+    const { projectId } = req.params;
+
+    const configs = await ConfigurationModel.find({ projectId });
+    res.json({ data: configs });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching configurations", error });
+    next(error);
   }
 };
 
-export const getById = async (req: Request, res: Response) => {
+export const createConfiguration = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const record = await ConfigurationModel.findById(req.params.id);
-    if (!record) return res.status(404).json({ message: "Record not found" });
-    res.json(record);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching Record", error });
-  }
-};
+    // Project is already validated by requireProjectOwner middleware
+    const { projectId } = req.params;
 
-export const createConfiguration = async (req: Request, res: Response) => {
-  try {
     const config = await ConfigurationModel.create({
       ...req.body,
-      projectId: req.params.projectId,
+      projectId,
     });
-    res.status(201).json(config);
+
+    logger.info({
+      action: "CONFIGURATION_CREATED",
+      configId: config._id,
+      projectId,
+      userId: req.user?.userId,
+    });
+
+    res.status(201).json({ data: config });
   } catch (error) {
-    res.status(500).json({ message: "Error creating configuration", error });
+    next(error);
+  }
+};
+
+export const getConfigurationById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Project is already validated by requireProjectReadAccess middleware
+    const { projectId, configId } = req.params;
+
+    const config = await ConfigurationModel.findOne({
+      _id: configId,
+      projectId,
+    });
+
+    if (!config) {
+      return res.status(404).json({
+        error: "CONFIGURATION_NOT_FOUND",
+        message: "Configuration not found",
+      });
+    }
+
+    res.json({ data: config });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateConfiguration = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Project is already validated by requireProjectOwner middleware
+    const { projectId, configId } = req.params;
+
+    const config = await ConfigurationModel.findOne({
+      _id: configId,
+      projectId,
+    });
+
+    if (!config) {
+      return res.status(404).json({
+        error: "CONFIGURATION_NOT_FOUND",
+        message: "Configuration not found",
+      });
+    }
+
+    Object.assign(config, req.body);
+    await config.save();
+
+    logger.info({
+      action: "CONFIGURATION_UPDATED",
+      configId,
+      projectId,
+      userId: req.user?.userId,
+    });
+
+    res.json({ data: config });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteConfiguration = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Project is already validated by requireProjectOwner middleware
+    const { projectId, configId } = req.params;
+
+    const config = await ConfigurationModel.findOneAndDelete({
+      _id: configId,
+      projectId,
+    });
+
+    if (!config) {
+      return res.status(404).json({
+        error: "CONFIGURATION_NOT_FOUND",
+        message: "Configuration not found",
+      });
+    }
+
+    logger.info({
+      action: "CONFIGURATION_DELETED",
+      configId,
+      projectId,
+      userId: req.user?.userId,
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
 };

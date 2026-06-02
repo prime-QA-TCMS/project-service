@@ -1,0 +1,292 @@
+Phase 1 Specification — Project Service
+1) Purpose (Phase 1)
+
+Project Service is the source of truth for Projects and their Milestones and Project Configurations. It provides CRUD-style APIs secured by Bearer auth (except health) to support the rest of TCMS in Phase 1.
+
+Primary Phase 1 outcome: Other services (testcases/results/configuration, UI) can reliably create/list/manage projects and attach milestones + lightweight configuration objects to a project.
+
+2) Scope
+In scope (Phase 1)
+
+Projects
+
+List all projects
+
+Get project by id
+
+Create project (auto-generate key if not provided)
+
+Update project (partial update)
+
+Soft delete project (isActive=false)
+
+Milestones (per Project)
+
+List milestones for a project
+
+Create milestone for a project
+
+Configurations (per Project)
+
+List configurations for a project
+
+Create configuration for a project
+
+Health
+
+Public health endpoint (no auth) returning status quickly
+
+Explicitly out of scope (Phase 1)
+
+RBAC/permission matrix beyond “authenticated vs unauthenticated” (if you already have RBAC in commons, keep it minimal for Phase 1)
+
+Project membership/teams/invites
+
+Advanced filtering/sorting/pagination (unless already implemented via commons)
+
+Milestone update/delete endpoints (not defined in current API contract)
+
+Configuration update/delete endpoints (not defined in current API contract)
+
+3) External Dependencies (Phase 1)
+
+Auth/JWT: All non-health endpoints require Bearer token.
+
+service-commons (required): use it for:
+
+request validation patterns (DTO validation)
+
+consistent error responses + HTTP mapping
+
+logging/correlation-id/middleware
+
+DB connection bootstrap + repository patterns
+
+any shared “search” helpers (if present), though Project Service’s Phase 1 contract doesn’t expose “search” endpoints
+
+4) Data Model (logical)
+Project
+
+_id (Mongo ObjectId)
+
+name (string, required)
+
+key (string, unique; optional input; auto-generated from name if absent)
+
+description (string, optional)
+
+owner (string/userId, required)
+
+visibility (enum: private|public, default private)
+
+isActive (boolean, default true)
+
+createdAt, updatedAt (timestamps)
+
+Indexes (Phase 1 minimum)
+
+Unique index on key
+
+Index on owner
+
+Index on isActive (if you commonly exclude inactive)
+
+Milestone
+
+_id
+
+projectId (required; sourced from path param)
+
+title (required)
+
+description (optional)
+
+startDate (optional ISO date)
+
+dueDate (optional ISO date)
+
+isCompleted (boolean default false)
+
+createdAt, updatedAt
+
+Indexes:
+
+Index on projectId
+
+Configuration
+
+_id
+
+projectId (required; sourced from path param)
+
+name (required)
+
+description (optional)
+
+baseUrl (optional)
+
+environmentVariables (object map, optional)
+
+isActive (boolean default true)
+
+createdAt, updatedAt
+
+Indexes:
+
+Index on projectId
+
+5) API Contract (Phase 1)
+
+Base URL in Postman is {{baseUrl}} and Project endpoints appear rooted at / with /:id patterns.
+
+5.1 Health (public)
+
+GET /health → 200 { "status": "ok" } (no auth)
+
+Acceptance criteria (Gherkin)
+
+Given the service is running when I GET /health then I receive 200 and a JSON body containing status.
+
+5.2 Projects
+
+GET / → list all projects
+
+GET /:id → get project by id
+
+POST / → create project
+
+PUT /:id → update project (partial update)
+
+DELETE /:id → soft delete project (sets isActive=false)
+
+Create Project rules (Phase 1)
+
+Required: name, owner
+
+Optional: key, description, visibility
+
+If key absent: auto-generate from name (e.g. “Project Management System” → “PMS”)
+
+key must be unique; on duplicate return server error (ideally map to 409 Conflict in implementation even if Postman says 500).
+
+Soft delete rules
+
+Mark isActive=false
+
+Update updatedAt
+
+Return confirmation + deactivated entity
+
+Acceptance criteria (Gherkin)
+
+Create:
+
+Given I am authenticated when I POST / with name and owner then I receive 201 and a project with isActive=true and timestamps.
+
+Given I omit key when I create a project then the response includes an auto-generated key.
+
+Get:
+
+Given a project exists when I GET /:id then I receive 200 with that project.
+
+Given the id does not exist when I GET /:id then I receive 404 with { "message": "Project not found" }.
+
+Update:
+
+Given a project exists when I PUT /:id with some fields then only those fields change and updatedAt updates.
+
+Delete:
+
+Given a project exists when I DELETE /:id then the project’s isActive becomes false and I receive 200 with "Project deactivated".
+
+5.3 Milestones (by project)
+
+GET /:projectId/milestones → list milestones for project
+
+POST /:projectId/milestones → create milestone for project
+
+Milestone rules (Phase 1)
+
+projectId comes from URL path and must be used in created record
+
+Default isCompleted=false
+
+Dates are optional but must be ISO-8601 if provided
+
+Acceptance criteria (Gherkin)
+
+Given I am authenticated when I POST /:projectId/milestones with title then I receive 201 and the milestone contains that projectId and isCompleted=false.
+
+Given I GET /:projectId/milestones then I receive 200 and an array (possibly empty).
+
+5.4 Configurations (by project)
+
+GET /:projectId/configurations → list configs for project
+
+POST /:projectId/configurations → create config for project
+
+Configuration rules (Phase 1)
+
+projectId comes from URL path and must be used in created record
+
+name is required
+
+environmentVariables is a free-form map/object for env vars
+
+Acceptance criteria (Gherkin)
+
+Given I am authenticated when I POST /:projectId/configurations with name then I receive 201 and the config contains that projectId.
+
+When I GET /:projectId/configurations then I receive 200 and an array (possibly empty).
+
+6) Non-functional Requirements (Phase 1)
+Security
+
+All endpoints except /health require Bearer auth.
+
+Validate Mongo ObjectId format for :id / :projectId and return 400 if invalid (commons should standardize this).
+
+Reliability & data integrity
+
+Use soft delete for projects; other entities should not be auto-deleted.
+
+Enforce uniqueness of Project.key.
+
+Consistent timestamps (createdAt/updatedAt).
+
+Observability
+
+Structured logs with correlation id (from commons middleware).
+
+Log key events: create/update/delete project, create milestone/config.
+
+Performance
+
+/health should be fast (<100ms target).
+
+List endpoints should be acceptable with basic indexes; pagination can be Phase 2.
+
+7) Phase 1 Definition of Done (release readiness)
+
+All endpoints in the Phase 1 contract work end-to-end with DB
+
+Auth enforced on all non-health routes
+
+Request validation + consistent error format via service-commons
+
+Postman collection passes (happy path + auth missing + not found)
+
+Unit tests for: key generation, soft delete behavior, validation failures
+
+Basic integration tests for: create project → add milestone → list milestones; create project → add configuration → list configurations
+
+8) Known Gaps / Risks (Phase 1)
+
+Postman describes duplicate key errors as 500; better product behavior is 409 Conflict for unique key violations (recommend implementing this in Phase 1 if commons supports error mapping).
+
+No update/delete endpoints defined for milestones/configurations; UI/workflows must be designed accordingly (Phase 2 candidate).
+
+Add the pino logging library (fast, modern, and widely used).
+Integrate it into the main app entry (index.ts).
+Replace console.log with structured logger calls.
+Add a basic error logger middleware.

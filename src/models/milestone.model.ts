@@ -7,6 +7,8 @@ export interface IMilestone extends Document {
   startDate?: Date;
   dueDate?: Date;
   isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const MilestoneSchema = new Schema<IMilestone>(
@@ -20,6 +22,11 @@ const MilestoneSchema = new Schema<IMilestone>(
   },
   { timestamps: true }
 );
+
+// Index for performance
+MilestoneSchema.index({ projectId: 1 });
+MilestoneSchema.index({ dueDate: 1 });
+MilestoneSchema.index({ isCompleted: 1 });
 
 export const MilestoneModel = mongoose.model<IMilestone>(
   "Milestone",

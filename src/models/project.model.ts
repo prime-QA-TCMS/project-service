@@ -23,6 +23,12 @@ const ProjectSchema = new Schema<IProject>(
   { timestamps: true }
 );
 
+// Indexes for performance
+ProjectSchema.index({ owner: 1 });
+ProjectSchema.index({ isActive: 1 });
+ProjectSchema.index({ visibility: 1 });
+ProjectSchema.index({ createdAt: -1 });
+
 // ✅ Auto-generate "key" from name (e.g. "Project Management System" -> "PMS")
 ProjectSchema.pre<IProject>("save", async function (next) {
   try {

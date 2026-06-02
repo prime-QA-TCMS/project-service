@@ -1,22 +1,107 @@
 import { ConfigurationModel } from "../models/configuration.model.js";
-export const getConfigurations = async (req, res) => {
+import logger from "../utils/logger.js";
+export const getConfigurations = async (req, res, next) => {
     try {
-        const configs = await ConfigurationModel.find({ projectId: req.params.projectId });
-        res.json(configs);
+        // Project is already validated by requireProjectReadAccess middleware
+        const { projectId } = req.params;
+        const configs = await ConfigurationModel.find({ projectId });
+        res.json({ data: configs });
     }
     catch (error) {
-        res.status(500).json({ message: "Error fetching configurations", error });
+        next(error);
     }
 };
-export const createConfiguration = async (req, res) => {
+export const createConfiguration = async (req, res, next) => {
     try {
+        // Project is already validated by requireProjectOwner middleware
+        const { projectId } = req.params;
         const config = await ConfigurationModel.create({
             ...req.body,
-            projectId: req.params.projectId,
+            projectId,
         });
-        res.status(201).json(config);
+        logger.info({
+            action: "CONFIGURATION_CREATED",
+            configId: config._id,
+            projectId,
+            userId: req.user?.userId,
+        });
+        res.status(201).json({ data: config });
     }
     catch (error) {
-        res.status(500).json({ message: "Error creating configuration", error });
+        next(error);
+    }
+};
+export const getConfigurationById = async (req, res, next) => {
+    try {
+        // Project is already validated by requireProjectReadAccess middleware
+        const { projectId, configId } = req.params;
+        const config = await ConfigurationModel.findOne({
+            _id: configId,
+            projectId,
+        });
+        if (!config) {
+            return res.status(404).json({
+                error: "CONFIGURATION_NOT_FOUND",
+                message: "Configuration not found",
+            });
+        }
+        res.json({ data: config });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+export const updateConfiguration = async (req, res, next) => {
+    try {
+        // Project is already validated by requireProjectOwner middleware
+        const { projectId, configId } = req.params;
+        const config = await ConfigurationModel.findOne({
+            _id: configId,
+            projectId,
+        });
+        if (!config) {
+            return res.status(404).json({
+                error: "CONFIGURATION_NOT_FOUND",
+                message: "Configuration not found",
+            });
+        }
+        Object.assign(config, req.body);
+        await config.save();
+        logger.info({
+            action: "CONFIGURATION_UPDATED",
+            configId,
+            projectId,
+            userId: req.user?.userId,
+        });
+        res.json({ data: config });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+export const deleteConfiguration = async (req, res, next) => {
+    try {
+        // Project is already validated by requireProjectOwner middleware
+        const { projectId, configId } = req.params;
+        const config = await ConfigurationModel.findOneAndDelete({
+            _id: configId,
+            projectId,
+        });
+        if (!config) {
+            return res.status(404).json({
+                error: "CONFIGURATION_NOT_FOUND",
+                message: "Configuration not found",
+            });
+        }
+        logger.info({
+            action: "CONFIGURATION_DELETED",
+            configId,
+            projectId,
+            userId: req.user?.userId,
+        });
+        res.status(204).send();
+    }
+    catch (error) {
+        next(error);
     }
 };

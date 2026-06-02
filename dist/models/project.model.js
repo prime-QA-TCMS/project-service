@@ -7,6 +7,11 @@ const ProjectSchema = new Schema({
     visibility: { type: String, enum: ["private", "public"], default: "private" },
     isActive: { type: Boolean, default: true },
 }, { timestamps: true });
+// Indexes for performance
+ProjectSchema.index({ owner: 1 });
+ProjectSchema.index({ isActive: 1 });
+ProjectSchema.index({ visibility: 1 });
+ProjectSchema.index({ createdAt: -1 });
 // ✅ Auto-generate "key" from name (e.g. "Project Management System" -> "PMS")
 ProjectSchema.pre("save", async function (next) {
     try {

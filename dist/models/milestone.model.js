@@ -7,4 +7,8 @@ const MilestoneSchema = new Schema({
     dueDate: { type: Date },
     isCompleted: { type: Boolean, default: false },
 }, { timestamps: true });
+// Index for performance
+MilestoneSchema.index({ projectId: 1 });
+MilestoneSchema.index({ dueDate: 1 });
+MilestoneSchema.index({ isCompleted: 1 });
 export const MilestoneModel = mongoose.model("Milestone", MilestoneSchema);

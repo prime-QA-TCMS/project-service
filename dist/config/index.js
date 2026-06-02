@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import logger from "../utils/logger.js";
 dotenv.config();
 export const config = {
     port: process.env.PORT || 8082,
@@ -10,10 +11,10 @@ export const config = {
 export const connectDb = async () => {
     try {
         await mongoose.connect(config.mongoUri, { retryWrites: true, w: "majority" });
-        console.log("✅ MongoDB connected");
+        logger.info("✅ MongoDB connected");
     }
     catch (err) {
-        console.error("❌ MongoDB connection failed:", err);
+        logger.error({ err }, "❌ MongoDB connection failed");
         process.exit(1);
     }
 };

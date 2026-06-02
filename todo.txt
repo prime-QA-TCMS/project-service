@@ -1,0 +1,193 @@
+A) Project Service TODOs (Phase 1)
+1) API Contract Hardening (Projects)
+
+ Make key immutable
+
+Ensure PUT /:id cannot change key (even if client sends it).
+
+Add validation: reject update payload containing key with 400 BAD_REQUEST + stable error code.
+
+ Clarify and enforce owner semantics
+
+Treat owner as immutable after creation (Phase 1).
+
+Validate owner format (e.g., must be a non-empty string; if it’s a Mongo ObjectId in your system, validate that).
+
+ Visibility rules (document + enforce minimal RBAC)
+
+Implement Phase 1 authorization rules:
+
+private: only owner can read/update/delete
+
+public: any authenticated user can read, only owner can update/delete
+
+Apply these checks for:
+
+GET /:id
+
+PUT /:id
+
+DELETE /:id
+
+(and Milestones endpoints too—see section C)
+
+The API already states auth is required , but Phase 1 needs the authorization behavior locked in.
+
+2) List Endpoint Production-Ready (GET /)
+
+ Add pagination:
+
+Support: page, pageSize
+
+Default: page=1, pageSize=20, max pageSize=100
+
+Return shape:
+
+{ "items": [...], "page": 1, "pageSize": 20, "total": 123 }
+
+
+ Add filters (Phase 1 lightweight):
+
+owner=<userId>
+
+isActive=true|false
+
+visibility=private|public
+
+ Add sorting:
+
+default: newest first (createdAt desc)
+
+optional: sort=createdAt|name, order=asc|desc
+
+3) Error Handling Standardization (Service-Level)
+
+ Replace ad-hoc error bodies like { "message": "Project not found" } with a single standard format across the service.
+
+ Ensure every endpoint uses:
+
+Stable error codes (strings)
+
+Consistent HTTP statuses (400/401/403/404/409/500)
+
+A traceId/correlationId in responses (wired from middleware; see commons section)
+
+Minimum error contract (Phase 1):
+
+{
+  "error": "PROJECT_NOT_FOUND",
+  "message": "Project not found",
+  "traceId": "..."
+}
+
+4) Data Integrity & Validation
+
+ Add/confirm DB constraints:
+
+Unique index on key (since it must be stable)
+
+Indexes on: owner, isActive, visibility, createdAt
+
+ Handle duplicate key properly:
+
+If key duplicates → return 409 CONFLICT with PROJECT_KEY_CONFLICT
+
+ Input validation for create:
+
+name required, min length 2
+
+visibility defaults to private
+
+isActive defaults true
+
+ Ensure soft delete actually flips isActive=false and does not remove the record
+
+5) Observability & Operational Readiness
+
+ Ensure /health exists and is no-auth (consistent with other services pattern)
+
+ Add request logging with:
+
+method, route, status code, latency
+
+trace/correlation id
+
+user id (from token), but never log secrets/tokens
+
+ Add structured logs for key actions:
+
+PROJECT_CREATED
+
+PROJECT_UPDATED
+
+PROJECT_DEACTIVATED
+
+6) Tests (Junior-Friendly Checklist)
+
+Unit tests
+
+ key cannot be updated
+
+ visibility rules enforced (private vs public)
+
+ owner immutability
+
+ validation errors return correct error shape + code
+
+Integration tests (API)
+
+ Create project → fetch → update → deactivate
+
+ Pagination returns stable metadata & correct item count
+
+ Duplicate key returns 409
+
+ Non-owner update/delete returns 403
+
+B) Project Service TODOs (Milestones)
+
+Your Project Service contract includes Milestones endpoints (list/create/update/etc.).
+
+1) Milestone Ownership & Project State Rules
+
+ Before any milestone operation, validate:
+
+project exists
+
+project is active (isActive=true)
+
+ Enforce access rules based on project visibility:
+
+If project is private → only owner can list/create/update milestones
+
+If project is public → any authenticated user can list, only owner can create/update/delete (Phase 1 choice; document it)
+
+2) Milestone Validation
+
+ Validate milestone request body:
+
+title required, min length 2
+
+startDate and dueDate are optional but must be valid ISO dates if present
+
+if both dates present: startDate <= dueDate
+
+ Ensure milestone is always tied to projectId from the URL (ignore body-provided projectId if any)
+
+3) Milestone Query Improvements (Phase 1)
+
+ Add optional query filters:
+
+isCompleted=true|false
+
+from=<date>, to=<date> (filter dueDate range)
+
+ Add sorting default: dueDate asc, createdAt desc
+
+4) Milestone Tests
+
+ Cannot add milestone to deactivated project
+
+ Owner rules apply
+
+ Date validation
